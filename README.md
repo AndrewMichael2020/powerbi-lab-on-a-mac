@@ -1,0 +1,373 @@
+# Power BI Desktop Lab on a MacBook with UTM
+
+This guide builds a small, disposable Windows 11 ARM virtual machine for running
+Power BI Desktop on an Apple Silicon Mac. It is meant for local report building,
+learning, and light-to-medium Power BI work without Microsoft Store sign-in,
+Power BI Pro, Windows 365, Azure, or paid VM software.
+
+The working setup tested here is:
+
+- Host: Apple Silicon MacBook
+- VM app: UTM
+- Guest OS: Windows 11 ARM
+- Power BI app: Power BI Desktop x64 installer from Microsoft
+- Tested tight VM shape: 6 vCPU, 18 GiB RAM, 50 GiB expanding disk
+- Recommended new VM shape: 6 vCPU, 18 GiB RAM, 64 GiB expanding disk
+- Network: UTM Shared Network with `virtio-net-pci`
+- Shared folder: Mac `Documents` or a smaller project folder
+
+## What This Costs
+
+UTM is free from the UTM website. Power BI Desktop is free for local desktop use.
+Windows 11 can be installed and tested without activation, but long-term use may
+require a valid Windows license. This guide does not use activation hacks,
+subscriptions, Power BI Pro, the Microsoft Store, Azure, Fabric, or Windows 365.
+
+## Download Links
+
+- UTM: <https://mac.getutm.app/>
+- Power BI Desktop direct download page: <https://www.microsoft.com/en-us/download/details.aspx?id=58494>
+- Power BI Desktop product page: <https://powerbi.microsoft.com/en-us/desktop/>
+- Windows 11 specifications: <https://www.microsoft.com/en-us/windows/windows-11-specifications>
+
+For Windows 11 ARM media, use one of these routes:
+
+- Low-friction route: use CrystalFetch on macOS to download a Windows 11 ARM ISO.
+- Evaluation route: use Microsoft Evaluation Center if an ARM Enterprise
+  Evaluation ISO is available and does not require too much account friction.
+
+## Before You Start
+
+Make sure the Mac has enough free disk and memory:
+
+- Free disk: at least 100 GB is comfortable for a 64 GB expanding VM disk.
+- RAM: 32 GB minimum is workable; 64 GB is much nicer.
+- Network: disable VPN filtering while setting up. NordVPN, firewalls, or network
+  filters can block UTM Shared Network NAT.
+
+## VM Sizing
+
+Microsoft's Windows 11 installation floor is low: 2 CPU cores, 4 GB RAM, and a
+64 GB or larger storage device. That is enough to install Windows, not enough
+for a pleasant Power BI Desktop lab. Power BI Desktop is an x64 app, and on this
+setup it runs through Windows 11 ARM's x64 emulation inside UTM.
+
+Use these sizes instead:
+
+| Profile | CPU | RAM | Disk | Display | Use |
+| --- | ---: | ---: | ---: | --- | --- |
+| Windows-only floor | 2 vCPU | 4 GiB | 64 GiB | 1280x720+ | Official Windows install floor; not recommended for Power BI. |
+| Practical minimum | 4 vCPU | 12 GiB | 64 GiB | 1440x900 | Small CSV/Excel demos, light learning, patience required. |
+| Lean recommended | 6 vCPU | 18 GiB | 64 GiB | 1600x900 | Best default for a local Power BI lab on a capable Apple Silicon Mac. |
+| Comfortable | 6-8 vCPU | 24 GiB | 80-128 GiB | 1600x900 | Larger models, more browser/update headroom, only if the Mac has 64 GB+ RAM. |
+
+This repo's original test VM used a 50 GiB expanding disk successfully. For a
+fresh guide that other people will follow, 64 GiB is the safer minimum because
+it matches Windows 11's published storage requirement and leaves more room for
+updates. Use 50 GiB only for a deliberately disposable, tight lab.
+
+Create a Mac folder for files you want to move between macOS and Windows. A small
+project folder is safer than sharing all of `Documents`.
+
+Example:
+
+```text
+~/Documents/power-bi-lab/pbi-shared
+```
+
+If you want the Windows VM to see all Mac documents, select:
+
+```text
+~/Documents
+```
+
+## Install UTM
+
+1. Download UTM from <https://mac.getutm.app/>.
+2. Install it into `/Applications`.
+3. Open UTM once so macOS can grant its normal permissions.
+
+Use the website version if you want the free build. The App Store version is paid
+to support development, but functionally similar.
+
+## Get Windows 11 ARM Media
+
+The simplest route is CrystalFetch:
+
+1. Open CrystalFetch on macOS.
+2. Choose:
+   - Version: Windows 11
+   - Build: Latest
+   - Architecture: Apple Silicon
+   - Language: English or your preferred language
+   - Edition: Windows 11
+3. Let it download and create the ISO.
+
+You should end up with a `.iso` file in `~/Documents` or another folder you chose.
+
+## Create The VM
+
+1. Open UTM.
+2. Click `+`.
+3. Choose `Virtualize`.
+4. Choose `Windows`.
+5. Select the Windows 11 ARM ISO.
+6. Enable UTM guest tools if the wizard offers it.
+7. Set the VM resources. Recommended:
+   - CPU cores: `6`
+   - Memory: `18432 MB` or `18 GiB`
+   - Disk: `64 GiB`, expanding
+8. Select a shared directory:
+   - Best narrow choice: your `pbi-shared` folder
+   - Broader choice: `~/Documents`
+9. Name the VM:
+
+```text
+Power BI Windows 11 ARM Lab
+```
+
+10. Finish the wizard.
+
+## Recommended UTM Settings
+
+With the VM shut down, open UTM settings for the VM and check:
+
+- System:
+  - Architecture: ARM64 / aarch64
+  - CPU: `6` recommended; `4` minimum; `6-8` comfortable
+  - Memory: `18 GiB` recommended; `12 GiB` minimum; `24 GiB` comfortable
+  - Hypervisor: enabled
+  - TPM: enabled
+- Drives:
+  - Windows ISO attached during install
+  - Main disk: NVMe, 64 GiB expanding recommended; 50 GiB only for a tight disposable lab
+  - UTM guest tools ISO attached
+- Network:
+  - Mode: `Shared Network`
+  - Emulated card: `virtio-net-pci`
+- Sharing:
+  - Shared directory: your Mac folder
+  - Read-only: off if you want Windows to write files back
+- Display:
+  - Use a modest fixed working size such as `1600x900` or `1440x900`
+
+Avoid giving the VM too many cores. On a Mac with performance and efficiency
+cores, 6 vCPU can feel smoother than 8 vCPU because scheduling is simpler.
+
+## Install Windows
+
+1. Start the VM.
+2. If UTM drops into a boot manager or UEFI shell, choose the USB/DVD Windows
+   installer. If you see "Press any key to boot from CD/DVD", press a key.
+3. In Windows Setup:
+   - Choose language and keyboard.
+   - Choose `I don't have a product key`.
+   - Choose Windows 11 Pro if offered.
+   - Select the 50 GB unallocated disk.
+   - Let Windows create partitions and install.
+4. On reboot, do not press a key for the CD/DVD prompt. Let it boot from the
+   installed disk.
+5. During first-run setup:
+   - Use a local account if available.
+   - A simple username such as `pbi` is fine.
+   - Avoid Microsoft account sign-in unless Windows blocks all local-account
+     paths.
+
+## Install UTM Guest Tools
+
+This step matters. It gives Windows the virtio drivers, shared-folder support,
+and better integration.
+
+1. In Windows, open File Explorer.
+2. Go to `This PC`.
+3. Open the CD drive named `UTM Guest Tools`.
+4. Run the installer, usually named like:
+
+```text
+utm-guest-tools-*.exe
+```
+
+5. Accept the installer prompts.
+6. Reboot Windows after installation.
+
+If networking does not work before this step, that is normal.
+
+## Fix Networking
+
+The known-good UTM network setup is:
+
+- UTM Network Mode: `Shared Network`
+- Emulated Network Card: `virtio-net-pci`
+- Windows adapter description: `Red Hat VirtIO Ethernet Adapter`
+- Expected Windows IPv4 address: usually `192.168.64.2`
+- Expected gateway: usually `192.168.64.1`
+
+In Windows Command Prompt, test:
+
+```bat
+ipconfig /all
+ping 192.168.64.1
+ping 1.1.1.1
+ping microsoft.com
+```
+
+Interpretation:
+
+- `ping 192.168.64.1` works: Windows can reach UTM's virtual gateway.
+- `ping 1.1.1.1` works: internet routing works.
+- `ping microsoft.com` works: DNS also works.
+- Gateway works but internet fails: check Mac VPN/firewall/NAT filtering.
+- Gateway fails: reinstall UTM guest tools or recreate the VM network adapter.
+
+If you use NordVPN, disable it while testing. NordVPN can block UTM shared NAT.
+
+## Install Power BI Desktop
+
+Use the direct Microsoft installer, not the Microsoft Store.
+
+1. Open Edge inside Windows.
+2. Go to:
+
+```text
+https://www.microsoft.com/en-us/download/details.aspx?id=58494
+```
+
+3. Download `PBIDesktopSetup_x64.exe`.
+4. Run the installer.
+5. Launch Power BI Desktop.
+6. Skip sign-in if you only need local files.
+
+Power BI Desktop is x64. Windows 11 ARM runs it through Windows x64 emulation.
+That works, but it is not native-speed software.
+
+## Make It Less Sluggish
+
+Use this as an "alpine" local lab, not a giant workstation VM.
+
+UTM settings:
+
+- CPU: `6` recommended; `4` minimum; `6-8` comfortable
+- RAM: `18 GiB` recommended; `12 GiB` minimum; `24 GiB` comfortable
+- Disk: `64 GiB` expanding recommended; `50 GiB` tight disposable; `80-128 GiB` comfortable
+- Network: `Shared Network / virtio-net-pci`
+- Display: `1600x900` or `1440x900`
+
+Windows settings:
+
+- Display scaling: `100%`
+- Resolution: `1600x900` or `1440x900`
+- Accessibility -> Visual effects:
+  - Animation effects: off
+  - Transparency effects: off
+- Close Edge while working in Power BI.
+
+Power BI workflow:
+
+- Work from a local Windows folder:
+
+```text
+C:\PBI-work
+```
+
+- Use the Mac shared folder only to move files in or out.
+- Do not actively edit large `.pbix`, Excel, or CSV files over the shared WebDAV
+  folder. Copy them local first, work, then copy results back.
+
+## Shared Files From macOS
+
+In UTM, the shared Mac folder appears in Windows as a network/WebDAV drive,
+often something like:
+
+```text
+Network Drive (Z:)
+```
+
+If you selected `~/Documents`, Windows can browse your Mac Documents folder
+through that network drive.
+
+Recommended pattern:
+
+1. Put source CSV/XLSX files in the Mac shared folder.
+2. In Windows, copy them from `Z:` to:
+
+```text
+C:\PBI-work
+```
+
+3. Build or edit the `.pbix` from `C:\PBI-work`.
+4. Copy finished `.pbix` files back to the Mac shared folder.
+
+This keeps the VM disposable and avoids slow WebDAV file access during active
+Power BI work.
+
+## Rebuild Plan
+
+Treat the VM as disposable.
+
+Before deleting or rebuilding:
+
+1. Copy all `.pbix`, CSV, Excel, notes, and exports back to the Mac shared folder.
+2. Confirm the files are visible on macOS.
+3. Delete and recreate the VM only after the files are safe outside the VM disk.
+
+Do not rely on activation hacks, clock changes, or snapshot tricks.
+
+## Troubleshooting
+
+### Power BI opens but feels slow
+
+Expected causes:
+
+- Power BI Desktop is x64.
+- Windows 11 ARM is emulating x64.
+- UTM/QEMU has no Windows DirectX GPU acceleration.
+
+Fixes:
+
+- Start with 6 vCPU. Try 8 only on a larger Mac if refreshes are clearly CPU-bound.
+- Start with 18 GiB RAM. Try 24 GiB only if the Mac has 64 GB+ RAM and memory pressure stays low.
+- Keep the display at 1600x900 or lower.
+- Work from `C:\PBI-work`, not the shared folder.
+
+### Internet does not work
+
+Check:
+
+```bat
+ipconfig /all
+ping 192.168.64.1
+ping 1.1.1.1
+ping microsoft.com
+```
+
+If UTM shows a guest IP like `192.168.64.2`, the adapter is alive. If traffic
+still fails, check VPN/firewall filtering on the Mac.
+
+### Shared folder is empty or missing
+
+1. Shut down the VM.
+2. In UTM, select the VM.
+3. Choose the shared folder again.
+4. Pick the folder in the macOS picker so UTM receives permission.
+5. Boot Windows.
+6. Look for the share under `This PC` as a network drive.
+
+## Small Codex Prompt
+
+Use this in Codex App if you want an agent to guide the setup on your Mac:
+
+```text
+Help me set up a lean local Power BI Desktop lab on my Apple Silicon Mac using UTM.
+
+Use free/account-minimized steps:
+- UTM, Windows 11 ARM, local Windows account, no Microsoft Store sign-in.
+- 64 GiB expanding disk, 6 vCPU, 18 GiB RAM, 1600x900 display.
+- Mention that 50 GiB is only for a deliberately tight disposable lab.
+- Shared Network with virtio-net-pci.
+- Install UTM Guest Tools and verify Windows gets a 192.168.64.x IP.
+- Watch for VPN/firewall issues, especially NordVPN blocking UTM NAT.
+- Install Power BI Desktop using Microsoft's direct x64 installer, not Store.
+- Share a Mac folder with the VM, but tell me to work from C:\PBI-work and copy files back to Mac.
+
+Tell me exactly when I need to click macOS permission prompts, folder pickers, Windows installers, or account screens. Avoid paid subscriptions and avoid Microsoft account sign-in unless Windows blocks all local account paths.
+```
