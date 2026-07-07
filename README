@@ -356,6 +356,10 @@ still fails, check VPN/firewall filtering on the Mac.
 
 Use this in Codex App if you want an agent to guide the setup on your Mac:
 
+## Small Codex Prompt
+
+Use this in Codex App if you want an agent to guide the setup on your Mac:
+
 ```text
 Help me set up a lean local Power BI Desktop lab on my Apple Silicon Mac using UTM.
 
@@ -369,5 +373,5 @@ Use free/account-minimized steps:
 - Install Power BI Desktop using Microsoft's direct x64 installer, not Store.
 - Share a Mac folder with the VM, but tell me to work from C:\PBI-work and copy files back to Mac.
 
-Tell me exactly when I need to click macOS permission prompts, folder pickers, Windows installers, or account screens. Avoid paid subscriptions and avoid Microsoft account sign-in unless Windows blocks local setup.
+Tell me exactly when I need to click macOS permission prompts, folder pickers, Windows installers, or account screens. Avoid paid subscriptions and avoid Microsoft account sign-in unless Windows blocks all local account paths.
 ```
